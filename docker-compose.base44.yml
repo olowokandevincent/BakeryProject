@@ -1,0 +1,31 @@
+# Base44 dev environment for Bakerz Bite.
+#
+# The project is a static single-page site (HTML + CSS + JS + data/products.json):
+# there is no build step, no package manager and no backend. It only needs to be
+# served over HTTP from the repository root, because js/main.js fetches
+# `data/products.json` relatively (a file:// open is blocked by CORS).
+#
+# So we run a plain Python static server from the bind-mounted source on the
+# user-facing port 3000. Editing any file is reflected on the next page load;
+# since a static server has no watcher, call reload_preview after a change.
+
+services:
+  web:
+    image: python:3.12-alpine
+    working_dir: /app
+    command: ["python", "-m", "http.server", "3000", "--bind", "0.0.0.0", "--directory", "/app"]
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+    restart: on-failure
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:3000/index.html', timeout=5); sys.exit(0 if r.status==200 else 1)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
